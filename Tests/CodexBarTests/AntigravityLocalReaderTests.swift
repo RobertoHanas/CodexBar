@@ -1191,4 +1191,67 @@ extension AntigravityLocalReaderTests {
         #expect(AntigravityLocalReader.pricingBaseModelID(for: "gemini-3.7-flash-safety-le")
             == "gemini-3.7-flash")
     }
+
+    @Test
+    func `Gemini 3.8 Flash n variant prices from the base Flash model`() async throws {
+        let fixture = try Fixture()
+        try Self.saveCatalog(Self.googleCatalog, in: fixture)
+        try fixture.database(blobs: [Fixture.blob(model: "gemini-3.8-flash-n")])
+
+        let snapshot = try await fixture.snapshot()
+        // 100 input at 0.75, 50 cache reads at 0.075, 37 output at 3.75 per million.
+        let expected = 100 * 0.75e-6 + 50 * 0.075e-6 + 37 * 3.75e-6
+        #expect(abs((snapshot.last30DaysCostUSD ?? .nan) - expected) < 1e-12)
+        // The recorded model name stays exactly as observed; only pricing resolves through the alias.
+        #expect(snapshot.daily.first?.modelBreakdowns?.first?.modelName == "gemini-3.8-flash-n")
+        #expect(AntigravityLocalReader.pricingBaseModelID(for: "gemini-3.8-flash-n")
+            == "gemini-3.8-flash")
+    }
+
+    @Test
+    func `Gemini 4 Argon trial variant prices from the base Argon model`() async throws {
+        let fixture = try Fixture()
+        try Self.saveCatalog(Self.googleCatalog, in: fixture)
+        try fixture.database(blobs: [Fixture.blob(model: "gemini-4-argon-trial")])
+
+        let snapshot = try await fixture.snapshot()
+        // 100 input at 2, 50 cache reads at 0.1, 37 output at 10 per million.
+        let expected = 100 * 2e-6 + 50 * 0.1e-6 + 37 * 10e-6
+        #expect(abs((snapshot.last30DaysCostUSD ?? .nan) - expected) < 1e-12)
+        #expect(snapshot.daily.first?.modelBreakdowns?.first?.modelName == "gemini-4-argon-trial")
+        #expect(AntigravityLocalReader.pricingBaseModelID(for: "gemini-4-argon-trial")
+            == "gemini-4-argon")
+    }
+
+    @Test(arguments: ["gemini-3.8-flash-n-est", "gemini-4-argon-trial-high"])
+    func `unrecorded Gemini variant names stay unpriced`(model: String) async throws {
+        let fixture = try Fixture()
+        try Self.saveCatalog(Self.googleCatalog, in: fixture)
+        try fixture.database(blobs: [Fixture.blob(model: model)])
+
+        let snapshot = try await fixture.snapshot()
+        let entry = try #require(snapshot.daily.first)
+        #expect(entry.costUSD == nil)
+        #expect(entry.unpricedRequestCount == 1)
+        #expect(entry.modelBreakdowns?.map(\.modelName) == [model])
+    }
+
+    private static let googleCatalog = #"""
+    {
+        "google": {
+            "id": "google",
+            "name": "Google",
+            "models": {
+                "gemini-3.8-flash": {
+                    "id": "gemini-3.8-flash",
+                    "cost": {"input": 0.75, "output": 3.75, "cache_read": 0.075}
+                },
+                "gemini-4-argon": {
+                    "id": "gemini-4-argon",
+                    "cost": {"input": 2, "output": 10, "cache_read": 0.1}
+                }
+            }
+        }
+    }
+    """#
 }

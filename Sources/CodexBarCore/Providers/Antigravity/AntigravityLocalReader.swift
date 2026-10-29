@@ -116,6 +116,14 @@ enum AntigravityLocalReader {
         "gemini-3.1-pro-high": "gemini-3.1-pro-preview",
         "gemini-3.1-pro-low": "gemini-3.1-pro-preview",
         "gemini-3.7-flash-safety-le": "gemini-3.7-flash",
+        // Observed in Antigravity local records. Public reports describe `-n` as a routed
+        // variant of Gemini 3.8 Flash; this pricing alias is an assumption based on those
+        // reports, not an officially confirmed model identity.
+        "gemini-3.8-flash-n": "gemini-3.8-flash",
+        // Observed in Antigravity local records for trial-plan usage. Priced at the
+        // cataloged base model's list rates without claiming the variant's identity
+        // or that trial usage is actually charged.
+        "gemini-4-argon-trial": "gemini-4-argon",
     ]
 
     /// `gpt-oss-120b` is an open-weight model, so no first-party vendor lists a price for it.
